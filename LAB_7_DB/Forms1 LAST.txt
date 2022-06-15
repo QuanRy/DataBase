@@ -1,0 +1,611 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using NEW_Lab_7_DB.Entities;
+using NEW_Lab_7_DB.MySQL;
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace NEW_Lab_7_DB
+{
+    public partial class Form1 : Form
+    {
+        int button_all_clients = 0, button_all_taxi_companies = 0, button_all_reviews = 0; // переменные для отслеживания кнопок
+        int counter = 0;    // переменная для занесения данных в отзывы
+
+        public Form1()
+        {
+            InitializeComponent();
+            dataGridViewWindow.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;  // для  автоматического выравнивания по ширине столбца
+            dateTimePicker1.Format = DateTimePickerFormat.Custom;      // кастомный формат даты и времени 
+            dataGridViewWindow.ReadOnly = true;  // только чтение
+
+
+            if (counter == 0)  // если приложение запущено впервые, то добавит значения в combobox из MySQL
+            {
+                Update_Comboboxes();
+
+                dataGridViewWindow.DataSource = null;
+                counter += 1;
+            }
+        }
+
+        private void textBox_taxi_rating_KeyPress(object sender, KeyPressEventArgs e)  // принимает в рейтинг только точки и цифры
+        {
+            char number = e.KeyChar;
+
+            if (!Char.IsDigit(number) & e.KeyChar != 8 & e.KeyChar != 46)  // проверка float числа рейтинга
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void textBox_telephone_number_KeyPress(object sender, KeyPressEventArgs e)  // принимает в поле "номер телефона" только цифры
+        {
+            char number = e.KeyChar;
+
+            if (!Char.IsDigit(number) & e.KeyChar != 8)  // проверка номера телефона только из цифр (разрешено удаление, из-за e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void Update_Comboboxes()  // функция для обновления всех combobox
+        {
+            comboBox_Clients.Items.Clear(); comboBox_TaxiCompanies.Items.Clear();
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetAllClientsNicknames();
+            for (int i = 0; i < MySQLConnection.GetAllClientsNicknames().Count(); i++) // добавить значения клиентов в комбобокс
+            {
+                comboBox_Clients.Items.Add(this.dataGridViewWindow.Rows[i].Cells[2].Value.ToString());
+            }
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetAllTaxiCompaniesNames();
+            for (int i = 0; i < MySQLConnection.GetAllTaxiCompaniesNames().Count(); i++)  // добавить значения такси компаний в комбобокс
+            {
+                comboBox_TaxiCompanies.Items.Add(this.dataGridViewWindow.Rows[i].Cells[1].Value.ToString());
+            }
+
+            counter += 1;
+        }
+
+        private void dataGridViewWindow_CellContentClick(object sender, DataGridViewCellEventArgs e)  // заносит значение из DataGrid в нужные поля
+        {
+            if (button_all_clients == 1 & button_all_taxi_companies == 0 & button_all_reviews == 0)  // нажата "все клиенты"
+            {
+                textBox_IdCurrentRow.Text = dataGridViewWindow.CurrentRow.Cells[0].Value.ToString();
+                textBox_telephone_number.Text = dataGridViewWindow.CurrentRow.Cells[1].Value.ToString();
+                textBox_clients_nickname.Text = dataGridViewWindow.CurrentRow.Cells[2].Value.ToString();
+                textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = "";
+                comboBox_Clients.Text = ""; comboBox_TaxiCompanies.Text = ""; //textBox_IdCurrentRow.Text = "";
+            }
+            if (button_all_clients == 0 & button_all_taxi_companies == 1 & button_all_reviews == 0)  // нажата "все такси компании"
+            {
+                textBox_IdCurrentRow.Text = dataGridViewWindow.CurrentRow.Cells[0].Value.ToString();
+                textBox_taxi_companies.Text = dataGridViewWindow.CurrentRow.Cells[1].Value.ToString();
+                textBox_taxi_rating.Text = dataGridViewWindow.CurrentRow.Cells[2].Value.ToString().Replace(",", ".");  // заменяет запятую в числе на точку
+
+
+                textBox_telephone_number.Text = ""; textBox_clients_nickname.Text = "";
+                comboBox_Clients.Text = ""; comboBox_TaxiCompanies.Text = ""; //textBox_IdCurrentRow.Text = "";
+            }
+            if (button_all_clients == 0 & button_all_taxi_companies == 0 & button_all_reviews == 1)  // нажата "все отзывы" 
+            {
+                textBox_IdCurrentRow.Text = dataGridViewWindow.CurrentRow.Cells[0].Value.ToString();
+                textBox_telephone_number.Text = ""; textBox_taxi_rating.Text = ""; //textBox_IdCurrentRow.Text = "";
+
+                dateTimePicker1.Text = dataGridViewWindow.CurrentRow.Cells[1].Value.ToString();
+                textBox_content.Text = dataGridViewWindow.CurrentRow.Cells[2].Value.ToString();
+                comboBox_Clients.Text = dataGridViewWindow.CurrentRow.Cells[3].Value.ToString();  // показать nickname
+                comboBox_TaxiCompanies.Text = dataGridViewWindow.CurrentRow.Cells[4].Value.ToString();
+            }
+        }
+
+        // ------------------------------------------------- КЛИЕНТЫ ---------------------------------------
+        private void button_AllClients_Click(object sender, EventArgs e)  // нажата кнопка "все клиенты"
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = "";
+            button_all_clients = 1; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            label_InfoEdit.Text = "Все клиенты";
+            dataGridViewWindow.DataSource = MySQLConnection.GetAllClients();
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+        }
+
+        private void button_AddClients_Click_1(object sender, EventArgs e)  // нажата кнопка "добавить клиента"
+        {
+            try
+            {
+                if (textBox_telephone_number.Text.Length != 0)
+                {
+                    if (textBox_clients_nickname.Text.Length != 0)
+                    {
+                        Convert.ToInt64(textBox_telephone_number.Text);
+
+                        string telephone_number = textBox_telephone_number.Text; //здесь получим имя курьера
+                        string nickname = textBox_clients_nickname.Text;
+
+                        int rez = MySQLConnection.AddClients(telephone_number, nickname);
+
+                        if (rez == 2)
+                        {
+                            Update_Comboboxes();
+
+                            button_AllClients_Click(sender, e); // повторное нажатие вывода клиентов
+
+                            label_InfoEdit.Text = "Клиент добавлен";
+                        }
+                        else
+                            label_InfoEdit.Text = "Не удалось добавить клиента!";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите nickname!";
+                }
+                else
+                    label_InfoEdit.Text = "Введите номер телефона!";
+            }
+            catch
+            {
+                label_InfoEdit.Text = "(Ошибка добавления клиента!";
+            }
+        }
+
+        private void button_UpdateClients_Click(object sender, EventArgs e)  // нажата кнопка "обновить клиента"
+        {
+            if (button_all_clients == 1)
+            {
+                if (textBox_telephone_number.Text.Length != 0)
+                {
+                    if (textBox_clients_nickname.Text.Length != 0)
+                    {
+                        if (textBox_IdCurrentRow.Text.Length != 0)
+                        {
+                            int id_clients = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                            string new_telephone_number = textBox_telephone_number.Text;
+
+                            string new_nickname = textBox_clients_nickname.Text;
+
+                            int rez = MySQLConnection.UpdateClients(id_clients, new_telephone_number, new_nickname);
+
+                            if (rez == 2)  //получилось изменить
+                            {
+                                Update_Comboboxes();
+
+                                button_AllClients_Click(sender, e); // повторное нажатие вывода клиентов
+
+                                label_InfoEdit.Text = "Клиент изменен";
+                            }
+                            else
+                                label_InfoEdit.Text = "Ошибка изменения!";
+                        }
+                        else
+                            label_InfoEdit.Text = "Клиент не выбран!";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите nickname клиента";
+                }
+                else
+                    label_InfoEdit.Text = "Введите номер телефона!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести всех клиентов\" и выберите клиента!";
+        }
+
+        private void button_DeleteClients_Click(object sender, EventArgs e)  // нажата кнопка "удалить клиента"
+        {
+            if (button_all_clients == 1)
+            {
+                if (textBox_IdCurrentRow.Text.Length != 0)
+                {
+                    int id_clients = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                    MySQLConnection.DeleteClients(id_clients);
+
+                    Update_Comboboxes();
+
+                    button_AllClients_Click(sender, e); // повторное нажатие вывода клиентов
+
+                    label_InfoEdit.Text = "Клиент удален";
+                }
+                else
+                    label_InfoEdit.Text = "Выберите клиента!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести всех клиентов\" и выберите клиента!";
+        }
+
+
+        // ------------------------------------------------- ТАКСИ КОМПАНИИ ---------------------------------------
+        private void button_AllTaxiCompanies_Click(object sender, EventArgs e)  // нажата кнопка "вывести все такси компании"
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = "";
+            button_all_clients = 0; button_all_taxi_companies = 1; button_all_reviews = 0;
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetAllTaxiCompanies();
+
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+
+            label_InfoEdit.Text = "Все такси компании";
+        }
+
+        private void button_AddTaxiCompanies_Click(object sender, EventArgs e)   // нажата кнопка "добавить такси компанию"
+        {
+            try
+            {
+                if (textBox_taxi_companies.Text.Length != 0)
+                {
+                    if (textBox_taxi_rating.Text.Length != 0)
+                    {
+                        if (Regex.IsMatch(textBox_taxi_rating.Text, @"\A[1-5]{1}(?:[.][0-9]{1,2})?\z"))  // регулярка на ввод рейтинга [1;5]
+                        {
+                            string name_taxi_companies = textBox_taxi_companies.Text;
+                            float rating_taxi_companies = float.Parse(textBox_taxi_rating.Text, CultureInfo.InvariantCulture);
+
+                            int rez = MySQLConnection.AddTaxiCompanies(name_taxi_companies, rating_taxi_companies);
+
+                            if (rez == 2)
+                            {
+                                Update_Comboboxes();
+
+                                button_AllTaxiCompanies_Click(sender, e); // повторное нажатие вывода такси компаний
+
+                                label_InfoEdit.Text = "Такси компаний добавлена";
+                            }
+                            else
+                                label_InfoEdit.Text = "Не удалось добавить такси компанию!";
+                        }
+                        else
+                            label_InfoEdit.Text = "(Ошибка!) Введите рейтинг такси компании в формате \"3.4 или 3.40\" от 1 до 5";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите рейтинг такси компании!";
+                }
+                else
+                    label_InfoEdit.Text = "Введите название такси компании!";
+            }
+            catch
+            {
+                label_InfoEdit.Text = "(Ошибка!) Не удалось добавить такси компанию!";
+            }
+        }
+
+        private void button_UpdateTaxiCompanies_Click(object sender, EventArgs e)   // нажата кнопка "изменить такси компанию"
+        {
+            if (button_all_taxi_companies == 1)
+            {
+                if (textBox_taxi_companies.Text.Length != 0)
+                {
+                    if (textBox_taxi_rating.Text.Length != 0)
+                    {
+                        if (textBox_IdCurrentRow.Text.Length != 0)
+                        {
+                            if (Regex.IsMatch(textBox_taxi_rating.Text, @"\A[1-5]{1}(?:[.][0-9]{1,2})?\z"))  // регулярка на ввод рейтинга [1;5]
+                            {
+                                int id_taxi_companies = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                                string new_name_taxi_companies = textBox_taxi_companies.Text;
+
+                                float new_taxi_companies_rating = float.Parse(textBox_taxi_rating.Text, CultureInfo.InvariantCulture);
+
+                                int rez = MySQLConnection.UpdateTaxiCompanies(id_taxi_companies, new_name_taxi_companies, new_taxi_companies_rating);
+
+                                if (rez == 2)  //получилось изменить
+                                {
+                                    Update_Comboboxes();
+
+                                    button_AllTaxiCompanies_Click(sender, e); // повторное нажатие вывода клиентов
+
+                                    label_InfoEdit.Text = "Такси компания изменена";
+                                }
+                                else
+                                    label_InfoEdit.Text = "Ошибка изменения!";
+                            }   
+                            else
+                                label_InfoEdit.Text = "(Ошибка!) Введите рейтинг такси компании в формате \"3.4 или 3.40\" от 1 до 5";
+                        }
+                        else
+                            label_InfoEdit.Text = "Выберите такси компанию!";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите рейтинг такси компании!";
+                }
+                else
+                    label_InfoEdit.Text = "Введите название такси компании!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести все такси компании\" и выберите такси компанию!";
+        }
+
+        private void button_DeleteTaxiCompanies_Click(object sender, EventArgs e)  // нажата кнопка "удалить такси компанию"
+        {
+            if (button_all_taxi_companies == 1)
+            {
+                if (textBox_IdCurrentRow.Text.Length != 0)
+                {
+                    int id_taxi_companies = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                    MySQLConnection.DeleteTaxiCompanies(id_taxi_companies);
+
+                    Update_Comboboxes();
+
+                    button_AllTaxiCompanies_Click(sender, e); // повторное нажатие вывода такси компаний
+
+                    label_InfoEdit.Text = "Такси компания удалена";
+                }
+                else
+                    label_InfoEdit.Text = "Выберите такси компанию!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести все такси компании\" и выберите такси компанию!";
+        }
+
+        // ------------------------------------------------- ОТЗЫВЫ ---------------------------------------
+        private void button_AllReviews_Click_1(object sender, EventArgs e)  // нажата кнопка "вывести все отзывы"
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = "";
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 1;
+
+            Update_Comboboxes();
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetAllReviews();
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+            dataGridViewWindow.Columns[5].Visible = false;
+            dataGridViewWindow.Columns[6].Visible = false;
+            label_InfoEdit.Text = "Все отзывы";
+        }
+
+        private void button_AddReviews_Click(object sender, EventArgs e)  // нажата кнопка "добавить отзыв"
+        {
+            try
+            {
+                if (dateTimePicker1.Text.Length != 0)
+                {
+                    if (textBox_content.Text.Length != 0)
+                    {
+                        if (comboBox_Clients.Text.Length != 0)
+                        {
+                            if (comboBox_TaxiCompanies.Text.Length != 0)
+                            {
+                                string nickname = comboBox_Clients.Text;
+                                string name_taxi_companies = comboBox_TaxiCompanies.Text;  // получение такси компании из combobox
+
+                                string date_time = dateTimePicker1.Text;         //здесь получим дату в строковом формате
+                                string content = textBox_content.Text;
+                                int id_clients = MySQLConnection.GetClientsId(nickname);
+                                int id_taxi_companies = MySQLConnection.GetTaxiCompaniesId(name_taxi_companies);
+
+                                int rez = MySQLConnection.AddReviews(date_time, content, id_clients, id_taxi_companies);
+
+                                if (rez == 2)
+                                {
+                                    button_AllReviews_Click_1(sender, e); // повторное нажатие вывода клиентов
+                                    label_InfoEdit.Text = "Отзыв добавлен";
+                                }
+                                else
+                                    label_InfoEdit.Text = "(Ошибка!) Не удалось добавить отзыв!";
+                            }
+                            else
+                                label_InfoEdit.Text = "Выберите такси компанию!";
+                        }
+                        else
+                            label_InfoEdit.Text = "Выберите клиента!";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите содержание отзыва!";
+                }
+                else
+                    label_InfoEdit.Text = "Введите дату и время!";
+            }
+            catch
+            {
+                label_InfoEdit.Text = "Ошибка добавления отзыва!";
+            }
+        }
+
+        private void button_UpdateReviews_Click(object sender, EventArgs e)  // нажата кнопка "изменить отзыв"
+        {
+            if (button_all_reviews == 1)
+            {
+                if (dateTimePicker1.Text.Length != 0)
+                {
+                    if (textBox_content.Text.Length != 0)
+                    {
+                        if (comboBox_Clients.Text.Length != 0)
+                        {
+                            if (comboBox_TaxiCompanies.Text.Length != 0)
+                            {
+                                if (textBox_IdCurrentRow.Text.Length != 0)
+                                {
+                                    int id_reviews = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                                    string nickname = comboBox_Clients.Text;
+                                    string name_taxi_companies = comboBox_TaxiCompanies.Text;
+                                    string new_date_time = dateTimePicker1.Text;
+                                    string new_content = textBox_content.Text;
+                                    int new_id_clients = MySQLConnection.GetClientsId(nickname);
+                                    int new_id_taxi_companies = MySQLConnection.GetTaxiCompaniesId(name_taxi_companies);
+
+                                    int rez = MySQLConnection.UpdateReviews(id_reviews, new_date_time, new_content, new_id_clients, new_id_taxi_companies);
+
+                                    if (rez == 2)  //получилось изменить
+                                    {
+                                        button_AllReviews_Click_1(sender, e); // повторное нажатие вывода клиентов
+                                        label_InfoEdit.Text = "Отзыв изменен";
+                                    }
+                                    else
+                                        label_InfoEdit.Text = "Ошибка изменения";
+                                }
+                                else
+                                    label_InfoEdit.Text = "Выберите отзыв, который хотите отредактировать!";
+
+                            }
+                            else
+                                label_InfoEdit.Text = "Выберите такси компанию!";
+                        }
+                        else
+                            label_InfoEdit.Text = "Выберите клиента!";
+                    }
+                    else
+                        label_InfoEdit.Text = "Введите содержание отзыва!";
+                }
+                else
+                    label_InfoEdit.Text = "Введите дату и время!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести все отзывы\" и выберите отзыв!";
+        }
+
+        private void button_DeleteReviews_Click(object sender, EventArgs e)   // нажата кнопка "удалить отзыв" 
+        {
+            if (button_all_reviews == 1)
+            {
+                if (textBox_IdCurrentRow.Text.Length != 0)
+                {
+                    int id_reviews = Convert.ToInt32(textBox_IdCurrentRow.Text);
+
+                    MySQLConnection.DeleteReviews(id_reviews);
+
+                    button_AllReviews_Click_1(sender, e); // повторное нажатие вывода такси компаний
+
+                    label_InfoEdit.Text = "Отзыв был удален";
+                }
+                else
+                    label_InfoEdit.Text = "Выберите отзыв, который хотите удалить!";
+            }
+            else
+                label_InfoEdit.Text = "Нажмите кнопку \"Вывести все отзывы\" и выберите отзыв!";
+        }
+
+        // ------------------------------------------------- АНАЛИТИЧЕСКИЕ ЗАПРОСЫ ---------------------------------------
+        private void button_FullReviews_Click(object sender, EventArgs e)  // вывести подробный отзыв, отсортировав по дате (начиная с новых)
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = ""; comboBox_Clients.Text = "";
+            comboBox_TaxiCompanies.Text = ""; textBox_content.Text = "";
+
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetFullReviews();
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+
+            label_InfoEdit.Text = "Все отзывы с подробностями";
+        }
+
+        private void button_Top3taxiCompanies_Click(object sender, EventArgs e)   // нажата кнопка "топ 3 такси компании" (по рейтингу)
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = ""; comboBox_Clients.Text = "";
+            comboBox_TaxiCompanies.Text = ""; textBox_content.Text = "";
+
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            dataGridViewWindow.DataSource = MySQLConnection.GetTop3TaxiCompanies();
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+
+            label_InfoEdit.Text = "Топ 3 такси компании по рейтингу";
+        }
+
+        private void button_NewReviews_30_days_Click(object sender, EventArgs e)  // нажата кнопка "Отзывы не более 30-ти дней назад"
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = ""; comboBox_Clients.Text = "";
+            comboBox_TaxiCompanies.Text = ""; textBox_content.Text = "";
+
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            dataGridViewWindow.DataSource = MySQLConnection.Get30DaysReviews();
+            dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+            dataGridViewWindow.Columns[5].Visible = false;
+            dataGridViewWindow.Columns[6].Visible = false;
+
+            label_InfoEdit.Text = "Все отзывы, не старше 30-ти дней";
+        }
+
+        private void button_ReviewsonTaxiCompanies_Click(object sender, EventArgs e)  // нажата кнопка "Показать отзывы по выбранной такси компании"
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = ""; comboBox_Clients.Text = ""; textBox_content.Text = "";
+
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            if (comboBox_TaxiCompanies.Text.Length != 0)
+            {
+                string name_taxi_companies = comboBox_TaxiCompanies.Text;
+                int id_taxi_companies = MySQLConnection.GetTaxiCompaniesId(name_taxi_companies);
+
+                if (MySQLConnection.GetReviewsOnTaxiCompanie(id_taxi_companies).Count() > 0)
+                {
+                    dataGridViewWindow.DataSource = MySQLConnection.GetReviewsOnTaxiCompanie(id_taxi_companies);
+
+                    dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+                    dataGridViewWindow.Columns[5].Visible = false;
+                    dataGridViewWindow.Columns[6].Visible = false;
+
+                    label_InfoEdit.Text = "Все отзывы на выбранную такси компанию";
+                }
+                else
+                    label_InfoEdit.Text = "На выбранную такси компанию еще не добавлено отзывов!";
+            }
+            else
+                label_InfoEdit.Text = "Выберите такси компанию из списка!";
+        }
+
+        private void button_Reviews__Days_Click(object sender, EventArgs e)
+        {
+            dataGridViewWindow.DataSource = null;  // чтобы при повторном нажатии не накапливались значения
+
+            // для отчистки полей и отслеживания нажатых кнопок
+            textBox_taxi_companies.Text = ""; textBox_taxi_rating.Text = ""; textBox_telephone_number.Text = "";
+            textBox_clients_nickname.Text = ""; textBox_IdCurrentRow.Text = ""; comboBox_Clients.Text = "";
+            comboBox_TaxiCompanies.Text = ""; textBox_content.Text = "";
+
+            button_all_clients = 0; button_all_taxi_companies = 0; button_all_reviews = 0;
+
+            if (dateTimePicker1.Text.Length != 0)
+            {
+                string date_time = dateTimePicker1.Text;
+
+                dataGridViewWindow.DataSource = MySQLConnection.GetReviews__Days(date_time);
+                dataGridViewWindow.Columns[0].Visible = false;                     // для скрытия id, но  внутри он хранится
+                dataGridViewWindow.Columns[5].Visible = false;
+                dataGridViewWindow.Columns[6].Visible = false;
+
+                label_InfoEdit.Text = "Все отзывы, написанные позже выбранной даты";
+            }
+            else
+                label_InfoEdit.Text = "Введите дату и время!";
+        }
+
+
+
+    }
+}
