@@ -1,0 +1,633 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using NEW_Lab_7_DB.Entities;
+using MySql.Data.MySqlClient;
+using System.Data;
+
+namespace NEW_Lab_7_DB.MySQL
+{
+    class MySQLConnection
+    {
+        // ------------------------------------------------- КЛИЕНТЫ ---------------------------------------
+        public static Clients[] GetAllClientsNicknames()  // получить все никнеймы клиентов
+        {
+            var clients_nicknames = new List<Clients>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT nickname FROM clients; ", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                clients_nicknames.Add(new Clients(reader.GetString(0)));
+            }
+
+            reader.Close();     
+            command.Dispose();
+            connection.Close();  
+
+            return clients_nicknames.ToArray();   
+        }
+
+        public static int GetClientsId(string nickname)  // вывести всех клиентов
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  // открыть соединение с MySQL
+
+            int id_clients = 0;
+
+            try
+            {
+                var command = new MySqlCommand("select id_clients from clients where nickname = @nickname; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@nickname", nickname);
+                command.Parameters.Add(param1);
+
+                var reader = command.ExecuteScalar();
+
+                if (reader != null)
+                {
+                    id_clients = Convert.ToInt32(reader);
+                }
+
+                command.Dispose();
+                connection.Close();  
+            }
+            catch
+            {
+                return -2;  // 1 если не удалось найти айди клиента
+            }
+            return id_clients;   
+        }
+
+        public static Clients[] GetAllClients()  // вывести всех клиентов
+        {
+            var clients = new List<Clients>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT * FROM clients;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                clients.Add(new Clients(reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();    
+
+            return clients.ToArray();   
+        }
+
+        public static int AddClients(string telephone_number, string nickname)  // добавить клиента
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("insert into clients (telephone_number, nickname) " +
+                    "values (@telephone_number, @nickname);", connection);
+
+                MySqlParameter param2 = new MySqlParameter("@telephone_number", telephone_number);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@nickname", nickname);
+                command.Parameters.Add(param3);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+               return 1; // 1 если не удалось добавить клиента
+            }
+            return 2; //2 если удалось добавить клиента
+        }
+
+        public static int UpdateClients(int id_clients, string telephone_number, string nickname)  // изменить клиентов
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("update clients" + " set telephone_number = @telephone_number," +
+                    " nickname = @nickname where id_clients = @id_clients; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_clients", id_clients);
+                command.Parameters.Add(param1);
+                MySqlParameter param2 = new MySqlParameter("@telephone_number", telephone_number);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@nickname", nickname);
+                command.Parameters.Add(param3);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+                return 1; // 1 если не удалоось добавить курьера
+            }
+            return 2; //2 если удалось
+        }
+
+        public static int DeleteClients(int id_clients)  // удалить клиента
+        {
+            try
+            {
+                var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+                var connection = new MySqlConnection(ConnectionString);    
+                connection.Open();
+
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("delete from clients where id_clients = @id_clients; ", connection); // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_clients", id_clients);
+                command.Parameters.Add(param1);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+                
+                return 2;  // удалось удалить клиента
+            }
+            catch  { 
+                return 1;  // не удалось удалить клиента, т.к. он уже записан  в отзыв
+            }
+        }
+
+        // ------------------------------------------------- ТАКСИ КОМПАНИИ ---------------------------------------
+        public static TaxiCompanies[] GetAllTaxiCompaniesNames()  // вывести все такси компании
+        {
+            var taxi_companies_names = new List<TaxiCompanies>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);   
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT name FROM taxi_companies;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                taxi_companies_names.Add(new TaxiCompanies(reader.GetString(0)));
+            }
+
+            reader.Close();     
+            command.Dispose();
+            connection.Close();  
+
+            return taxi_companies_names.ToArray();   
+        }
+
+        public static int GetTaxiCompaniesId(string name_taxi_companies)  // получить ID такси  компании
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  
+
+            int id_taxi_companies = 0;
+
+            try
+            {
+                var command = new MySqlCommand("select id_taxi_companies from taxi_companies where name = @name; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@name", name_taxi_companies);
+                command.Parameters.Add(param1);
+
+                var reader = command.ExecuteScalar();
+
+                if (reader != null)
+                {
+                    id_taxi_companies = Convert.ToInt32(reader);
+                }
+                command.Dispose();
+                connection.Close();  
+            }
+            catch
+            {
+                return -2;  // 1 если не удалось найти айди клиента
+            }
+            return id_taxi_companies;   // возврат никнеймов клиентов в виде массива
+        }
+
+        public static TaxiCompanies[] GetAllTaxiCompanies()  // вывести все такси компании
+        {
+            var taxi_companies = new List<TaxiCompanies>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT * FROM taxi_companies;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                taxi_companies.Add(new TaxiCompanies(reader.GetInt32(0), reader.GetString(1), reader.GetFloat(2)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();     
+
+            return taxi_companies.ToArray();   
+        }
+
+        public static int AddTaxiCompanies(string name, float rating)  // добавить такси компанию
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("insert into taxi_companies (name, rating) values (@name, @rating);", connection); // команда MySQL
+
+                MySqlParameter param2 = new MySqlParameter("@name", name);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@rating", rating);
+                command.Parameters.Add(param3);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+                return 1; // 1 если не удалось добавить такси компанию
+            }
+            return 2; //2 если удалось добавить такси компанию
+        }
+
+        public static int UpdateTaxiCompanies(int id_taxi_companies, string name, float rating)  // изменить такси компанию
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("update taxi_companies" + " set name = @name, rating = @rating" +
+                    " where id_taxi_companies = @id_taxi_companies; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_taxi_companies", id_taxi_companies);
+                command.Parameters.Add(param1);
+                MySqlParameter param2 = new MySqlParameter("@name", name);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@rating", rating);
+                command.Parameters.Add(param3);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+                return 1; // 1 если не удалоось добавить курьера
+            }
+            return 2; //2 если удалось
+        }
+
+        public static int DeleteTaxiCompanies(int id_taxi_companies)  // удалить такси компанию
+        {
+            try
+            {
+                var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+                var connection = new MySqlConnection(ConnectionString);    
+                connection.Open();
+
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("delete from taxi_companies where id_taxi_companies = @id_taxi_companies; ", connection); // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_taxi_companies", id_taxi_companies);
+                command.Parameters.Add(param1);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+
+                return 2;  // удалось удалить такси компанию
+            }
+            catch
+            {
+                return 1;   // если не удалось удалить такси компанию (на нее имеется отзыв)
+            }
+        }
+
+        // ------------------------------------------------- ОТЗЫВЫ ---------------------------------------
+        public static Reviews[] GetAllReviews()
+        {
+            var reviews = new List<Reviews>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT id_reviews, date_time, content, clients.nickname, taxi_companies.name, " +
+                "clients_id_clients, taxi_companies_id_taxi_companies FROM coppy_taxi_09_06.reviews " +
+                "join  clients on clients.id_clients = reviews.clients_id_clients join taxi_companies " +
+                "on taxi_companies.id_taxi_companies = reviews.taxi_companies_id_taxi_companies;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                reviews.Add(new Reviews(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();     
+
+            return reviews.ToArray();   
+        }
+
+        public static int AddReviews(string date_time, string content, int id_clients, int id_taxi_companies)  // добавить такси компанию
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);   
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("insert into reviews (date_time, content, clients_id_clients, " +
+                    "taxi_companies_id_taxi_companies) values (@date_time, @content, @clients_id_clients, " +
+                    "@taxi_companies_id_taxi_companies);", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@date_time", date_time);
+                command.Parameters.Add(param1);
+                MySqlParameter param2 = new MySqlParameter("@content", content);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@clients_id_clients", id_clients);
+                command.Parameters.Add(param3);
+                MySqlParameter param4 = new MySqlParameter("@taxi_companies_id_taxi_companies", id_taxi_companies);
+                command.Parameters.Add(param4);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+                return 1; // 1 если не удалось добавить такси компанию
+            }
+            return 2; //2 если удалось добавить такси компанию
+        }
+
+        public static int UpdateReviews(int id_reviews, string date_time, string content, int id_clients, int id_taxi_companies)  // изменить такси компанию
+        {
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();
+
+            try
+            {
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("update reviews" + " set date_time = @date_time, content = @content, " +
+                    "clients_id_clients = @clients_id_clients, taxi_companies_id_taxi_companies = @taxi_companies_id_taxi_companies " +
+                    "where id_reviews = @id_reviews; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_reviews", id_reviews);
+                command.Parameters.Add(param1);
+                MySqlParameter param2 = new MySqlParameter("@date_time", date_time);
+                command.Parameters.Add(param2);
+                MySqlParameter param3 = new MySqlParameter("@content", content);
+                command.Parameters.Add(param3);
+                MySqlParameter param4 = new MySqlParameter("@clients_id_clients", id_clients);
+                command.Parameters.Add(param4);
+                MySqlParameter param5 = new MySqlParameter("@taxi_companies_id_taxi_companies", id_taxi_companies);
+                command.Parameters.Add(param5);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+                return 1; // 1 если не удалоось добавить отзыв
+            }
+            return 2; //2 если удалось
+        }
+
+        public static void DeleteReviews(int id_reviews)  // удалить отзыв
+        {
+            try
+            {
+                var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+                var connection = new MySqlConnection(ConnectionString);    
+                connection.Open();
+
+                var commamd = connection.CreateCommand();
+
+                var command = new MySqlCommand("delete from reviews where id_reviews = @id_reviews; ", connection);  // команда MySQL
+
+                MySqlParameter param1 = new MySqlParameter("@id_reviews", id_reviews);
+                command.Parameters.Add(param1);
+
+                var reader = command.ExecuteReader();
+
+                reader.Close();
+                connection.Close();
+                commamd.Dispose();
+            }
+            catch
+            {
+            }
+        }
+
+        public static FullReviews[] GetFullReviews()  // вывести полную информацию об отзыве
+        {
+            var full_reviews = new List<FullReviews>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    // обязательно закрывать соединение!!!
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("SELECT id_reviews, date_time, content, clients.nickname," +
+                " taxi_companies.name, clients.telephone_number, taxi_companies.rating FROM coppy_taxi_09_06.reviews " +
+                "join  clients on clients.id_clients = reviews.clients_id_clients " +
+                "join taxi_companies on taxi_companies.id_taxi_companies = reviews.taxi_companies_id_taxi_companies" +
+                " order by date_time desc;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                full_reviews.Add(new FullReviews(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetString(5), reader.GetFloat(6)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();    
+
+            return full_reviews.ToArray();   
+        }
+
+        public static TaxiCompanies[] GetTop3TaxiCompanies()  // вывести топ 3 такси компании по рейтингу
+        {
+            var top3_taxi_companies = new List<TaxiCompanies>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    // обязательно закрывать соединение!!!
+            connection.Open();         // открыть соединение с MySQL
+
+            var command = new MySqlCommand("select id_taxi_companies, name, rating from coppy_taxi_09_06.taxi_companies " +
+                "order by rating desc limit 3;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                top3_taxi_companies.Add(new TaxiCompanies(reader.GetInt32(0), reader.GetString(1), reader.GetFloat(2)));
+            }
+
+            reader.Close();     
+            command.Dispose();
+            connection.Close();  
+
+            return top3_taxi_companies.ToArray();   
+        }
+
+        public static Reviews[] Get30DaysReviews()  // новые отзывы не более 30-ти дней назад
+        {
+            var reviews = new List<Reviews>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    // обязательно закрывать соединение!!!
+            connection.Open();  // открыть соединение с MySQL
+
+            var command = new MySqlCommand("select id_reviews, date_time, content, clients.nickname," +
+                " taxi_companies.name, clients.id_clients, taxi_companies.id_taxi_companies from reviews " +
+                "join clients on clients.id_clients = reviews.clients_id_clients " +
+                "join taxi_companies on taxi_companies.id_taxi_companies = reviews.taxi_companies_id_taxi_companies " +
+                "where datediff(current_date(), date_time) <= 30 order by date_time desc;", connection);  // команда MySQL
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                reviews.Add(new Reviews(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();     
+
+            return reviews.ToArray();   
+        }
+
+        public static Reviews[] GetReviewsOnTaxiCompanie(int id_taxi_companies)  // показать отзывы на выбранную такси компанию
+        {
+            var reviews = new List<Reviews>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    // обязательно закрывать соединение!!!
+            connection.Open();          // открыть соединение с MySQL
+
+            var command = new MySqlCommand("select id_reviews, date_time, content, clients.nickname, taxi_companies.name," +
+                " clients.id_clients, taxi_companies.id_taxi_companies" +
+                " from reviews join taxi_companies on taxi_companies.id_taxi_companies = reviews.taxi_companies_id_taxi_companies" +
+                " join clients on clients.id_clients = reviews.clients_id_clients " +
+                "where taxi_companies_id_taxi_companies = @taxi_companies_id_taxi_companies order by date_time desc; ", connection);  // команда MySQL
+
+            MySqlParameter param1 = new MySqlParameter("@taxi_companies_id_taxi_companies", id_taxi_companies);
+            command.Parameters.Add(param1);
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                reviews.Add(new Reviews(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();    
+
+            return reviews.ToArray();  
+        }
+
+        public static Reviews[] GetReviews__Days(string date_time)  // показать отзывы, написанные позднеее выбранной даты
+        {
+            var reviews = new List<Reviews>();
+
+            var ConnectionString = "server=localhost;user=root;database=coppy_taxi_09_06;port=3306;password=aazzaa0099";  // соединение с БД MySQL
+            var connection = new MySqlConnection(ConnectionString);    
+            connection.Open();        // открыть соединение с MySQL
+
+            var command = new MySqlCommand("select id_reviews, date_time, content, clients.nickname, taxi_companies.name, " +
+                "clients.id_clients, taxi_companies.id_taxi_companies from reviews " +
+                "join taxi_companies on taxi_companies.id_taxi_companies = reviews.taxi_companies_id_taxi_companies " +
+                "join clients on clients.id_clients = reviews.clients_id_clients where date_time >= @date_time " +
+                "order by date_time desc;", connection);   // команда MySQL
+
+            MySqlParameter param1 = new MySqlParameter("@date_time", date_time);
+            command.Parameters.Add(param1);
+
+            var reader = command.ExecuteReader();
+
+            while (reader.Read())   // будет выполняться, пока в данной MySQL таблице есть значения
+            {
+                reviews.Add(new Reviews(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetInt32(5), reader.GetInt32(6)));
+            }
+
+            command.Dispose();
+            connection.Close();  
+            reader.Close();     
+
+            return reviews.ToArray();   
+        }
+
+
+
+    }
+}
