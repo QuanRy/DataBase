@@ -8,3 +8,6 @@
 
 ## MySQL_diagram
 ![БД_схема](https://user-images.githubusercontent.com/85188407/173918531-1a8aeb1e-6d25-43f3-9f4a-969f755a8909.PNG)
+
+## Program yhat connect to my MySQL DB with GUI
+![ОБЩИЙ ВИД](https://user-images.githubusercontent.com/85188407/174112847-8f1c05e1-939d-4833-acab-7a965da66cb7.PNG)
